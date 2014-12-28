@@ -1,3 +1,0 @@
-[submodule "delaunay"]
-	path = delaunay
-	url = git@github.com:ironwallaby/delaunay.git
