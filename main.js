@@ -16,7 +16,7 @@ Permission is granted to anyone to use this software for any purpose, including 
 
 function Fragilo() {
 	var gl;
-	var vShader;
+	var curveProg, plainProg;
 	var ptcMan, ptcHeapView;
 
 	var width, height;
@@ -32,9 +32,6 @@ function Fragilo() {
 		c.addEventListener("mouseout" , onMouseOut , false);
 
 		gl = c.getContext('webgl') || c.getContext('experimental-webgl');
-		var shader;
-		gl.shaderSource(shader, hoge);
-		gl.compileShader(shader);
 
 		var w = c.clientWidth;
 		var h = c.clientHeight;
@@ -58,6 +55,17 @@ function Fragilo() {
 		ptcMan.init(ptcBytes, w, h);
 		ptcHeap = ptcHeapNew;
 
+		var vCurveShader = newShader('fragilo-vs', {PROCESS_CURVE: 1});
+		var vPlainShader = newShader('fragilo-vs', {});
+		var fCurveShader = newShader('fragilo-fs', {});
+		curveProg = gl.createProgram();
+		gl.attachShader(curveProg, vCurveShader);
+		gl.attachShader(curveProg, vPlainShader);
+		gl.linkProgram(curveProg);
+		plainProg = gl.createProgram();
+		gl.attachShader(plainProg, vPlainShader);
+		gl.linkProgram(plainProg);
+
 		gl.viewport(0, 0, w, h);
 		width = w, height = h;
 		render(time);
@@ -77,6 +85,9 @@ function Fragilo() {
 	}
 
 	function render(startTime) {
+		gl.useProgram(plainProg);
+		gl.drawElements();
+		gl.useProgram(curveProg);
 		gl.drawElements();
 		gl.flush();
 		requestAnimationFrame(renderUpdate.bind(undefined, startTime));
@@ -130,6 +141,38 @@ function Fragilo() {
 	function onMouseOut(ev) {
 		mouseEndX = ev.clientX, mouseEndY = ev.clientY;
 	}
+
+	function newShader(id, option) {
+		var elem = document.getElementById(id);
+		if (!elem) return;
+		switch (elem.type){
+		case 'x-shader/x-vertex':
+			shader = gl.createShader(gl.VERTEX_SHADER);
+			break;
+		case 'x-shader/x-fragment':
+			shader = gl.createShader(gl.FRAGMENT_SHADER);
+			break;
+		default :
+			return;
+		}
+
+		var macros = "";
+		for (var k in option) {
+			var v = option[k];
+			if (v == null)
+				macros += "#define " + k + "\n";
+			else
+				macros += "#define " + k + " " + v + "\n";
+		}
+
+		var shader = gl.shaderSource(macros + elem.text);
+		gl.compileShader(shader);
+		if (gl.getShaderParameter(shader, gl.COMPILE_STATUS))
+			return shader;
+		else
+			console.error(gl.getShaderInfoLog(shader));
+	}
+
 
 	return { init: init };
 }

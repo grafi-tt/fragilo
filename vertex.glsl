@@ -17,7 +17,7 @@ Permission is granted to anyone to use this software for any purpose, including 
 precision mediump float;
 
 attribute aCoord;
-#ifdef COMPILE_FOR_CURVE
+#ifdef PROCESS_CURVE
 
 #endif
 
@@ -47,7 +47,7 @@ vec2 calculateShift() {
 		pqnt.x = -pqn.y, pqnt.y = pqn.x;
 		apn = -qan,
 		qan = normalize(q - a);
-#ifdef COMPILE_FOR_CURVE
+#ifdef PROCESS_CURVE
 		if () {
 			weight = isleft ? 1.0 : -1.0;
 			continue;
