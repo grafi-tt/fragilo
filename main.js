@@ -51,7 +51,7 @@ function Fragilo() {
 		var w = canvas.clientWidth;
 		var h = canvas.clientHeight;
 
-		var time = Time.now();
+		var time = Date.now();
 		var ptcHeapNew = new ArrayBuffer(ParticleMangerSupport.heapBytes(w, h));
 		if (ptcMan) {
 			ParticleMangerSupport.heapResize(ptcHeap, width, height, ptcMan.getParticleCount(),
@@ -91,7 +91,7 @@ function Fragilo() {
 			reportMouseMove();
 		}
 		clearMouseMove();
-		var time = Time.now();
+		var time = Date.now();
 		ptcMan.progressTime(time-prevTime);
 		checkReset();
 		render(time);
@@ -119,7 +119,7 @@ function Fragilo() {
 		}
 		if (width != w || height != h) {
 			if (resetTimer == Infinity)
-				resetTimer = Time.now() + ResetWait;
+				resetTimer = Date.now() + ResetWait;
 		} else {
 			if (resetTimer != Infinity)
 				resetTimer = Infinity;
@@ -128,7 +128,7 @@ function Fragilo() {
 	}
 
 	function checkReset() {
-		var toreset = Time.now() > resetTimer;
+		var toreset = Date.now() > resetTimer;
 		if (toreset) reset();
 		return toreset;
 	}
