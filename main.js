@@ -14,7 +14,7 @@ Permission is granted to anyone to use this software for any purpose, including 
 	3. This notice may not be removed or altered from any source distribution.
 */
 
-function FragileNonsense() {
+function Fragilo() {
 	var gl;
 	var vShader;
 	var ptcMan, ptcHeapView;
@@ -26,7 +26,7 @@ function FragileNonsense() {
 	var mouseSttX = -1, mouseSttY = -1, mouseEndX = -1, mouseEndY = -1;
 
 	function init() {
-		var c = document.getElementById('FragileNonsense');
+		var c = document.getElementById('fragilo');
 		c.addEventListener("mousemove", onMouseMove, false);
 		c.addEventListener("mouseover", onMouseOver, false);
 		c.addEventListener("mouseout" , onMouseOut , false);
@@ -131,7 +131,7 @@ function FragileNonsense() {
 		mouseEndX = ev.clientX, mouseEndY = ev.clientY;
 	}
 
-	return { init = init };
+	return { init: init };
 }
 
-window.onload = function() { FragileNonsense().init(); };
+window.onload = function() { Fragilo().init(); };
