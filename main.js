@@ -19,29 +19,29 @@ function Fragilo() {
 	var curveProg, plainProg;
 	var ptcMan, ptcHeapView;
 
-	var width, height;
+	var width, height, scale;
 	var resetSchedId;
 	var resetWait = 1000; // world will be reset 1000ms after last resizing
 
 	var mouseSttX = -1, mouseSttY = -1, mouseEndX = -1, mouseEndY = -1;
 
 	function init() {
+		scale = window.devicePixelRatio || 1;
 		var c = document.getElementById('fragilo');
+		gl = c.getContext('webgl') || c.getContext('experimental-webgl');
+
 		c.addEventListener("mousemove", onMouseMove, false);
 		c.addEventListener("mouseover", onMouseOver, false);
 		c.addEventListener("mouseout" , onMouseOut , false);
 
-		gl = c.getContext('webgl') || c.getContext('experimental-webgl');
-
-		var w = c.clientWidth;
-		var h = c.clientHeight;
+		var w = scale * c.clientWidth;
+		var h = scale * c.clientHeight;
 		reset(w, h);
-		gl.viewport(0, 0, w, h);
 	}
 
 	function reset(w, h) {
 		resetSchedId = null;
-		genVertexes(w, h);
+		genVertices(w, h);
 
 		var time = Time.now();
 		var ptcHeapNew = new ArrayBuffer(ParticleMangerSupport.heapBytes(width, height));
@@ -94,8 +94,8 @@ function Fragilo() {
 	}
 
 	function checkResize() {
-		var w = canvas.clientWidth;
-		var h = canvas.clientHeight;
+		var w = scale * canvas.clientWidth;
+		var h = scale * canvas.clientHeight;
 		var resized = 0;
 		if (canvas.width != w || canvas.height != h) {
 			canvas.width  = w;
