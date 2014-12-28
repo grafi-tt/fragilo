@@ -15,36 +15,44 @@ Permission is granted to anyone to use this software for any purpose, including 
 */
 
 function Fragilo() {
-	var gl;
+	var canvas, gl;
 	var curveProg, plainProg;
 	var ptcMan, ptcHeapView;
 
 	var width, height, scale;
-	var resetSchedId;
-	var resetWait = 1000; // world will be reset 1000ms after last resizing
+
+	var resetTimer;
+	var ResetWait = 1000; // world will be reset 1000ms after last resizing
 
 	var mouseSttX = -1, mouseSttY = -1, mouseEndX = -1, mouseEndY = -1;
 
+	var VerticesDensity = 1.0 / 200;
+
+	var verticesN, trianglesN;
+	var vertices, triangles;
+	var adjacencyDataIdx, adjacencyData;
+
+
 	function init() {
 		scale = window.devicePixelRatio || 1;
-		var c = document.getElementById('fragilo');
-		gl = c.getContext('webgl') || c.getContext('experimental-webgl');
+		canvas = document.getElementById('fragilo');
+		gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
 
-		c.addEventListener("mousemove", onMouseMove, false);
-		c.addEventListener("mouseover", onMouseOver, false);
-		c.addEventListener("mouseout" , onMouseOut , false);
+		canvas.addEventListener("mousemove", onMouseMove, false);
+		canvas.addEventListener("mouseover", onMouseOver, false);
+		canvas.addEventListener("mouseout" , onMouseOut , false);
 
-		var w = scale * c.clientWidth;
-		var h = scale * c.clientHeight;
-		reset(w, h);
+		reset();
 	}
 
-	function reset(w, h) {
-		resetSchedId = null;
-		genVertices(w, h);
+	function reset() {
+		resetTimer = Infinity;
+
+		var w = canvas.clientWidth;
+		var h = canvas.clientHeight;
 
 		var time = Time.now();
-		var ptcHeapNew = new ArrayBuffer(ParticleMangerSupport.heapBytes(width, height));
+		var ptcHeapNew = new ArrayBuffer(ParticleMangerSupport.heapBytes(w, h));
 		if (ptcMan) {
 			ParticleMangerSupport.heapResize(ptcHeap, width, height, ptcMan.getParticleCount(),
 					ptcHeapNew, w, h);
@@ -54,6 +62,8 @@ function Fragilo() {
 		ptcMan = ParticleManager(window, null, ptcHeapNew);
 		ptcMan.init(ptcBytes, w, h);
 		ptcHeap = ptcHeapNew;
+
+		genVertices(w, h);
 
 		var vCurveShader = newShader('fragilo-vs', {PROCESS_CURVE: 1});
 		var vPlainShader = newShader('fragilo-vs', {});
@@ -66,10 +76,12 @@ function Fragilo() {
 		gl.attachShader(plainProg, vPlainShader);
 		gl.linkProgram(plainProg);
 
-		gl.viewport(0, 0, w, h);
-		width = w, height = h;
+		gl.viewport(0, 0, scale*w, scale*h);
+
+		canvas.width = width = w, canvas.height = height = h;
 		render(time);
 	}
+
 
 	function renderUpdate(prevTime) {
 		reportMouseMove();
@@ -81,6 +93,7 @@ function Fragilo() {
 		clearMouseMove();
 		var time = Time.now();
 		ptcMan.progressTime(time-prevTime);
+		checkReset();
 		render(time);
 	}
 
@@ -94,29 +107,30 @@ function Fragilo() {
 	}
 
 	function checkResize() {
-		var w = scale * canvas.clientWidth;
-		var h = scale * canvas.clientHeight;
+		var w = canvas.clientWidth;
+		var h = canvas.clientHeight;
 		var resized = 0;
 		if (canvas.width != w || canvas.height != h) {
 			canvas.width  = w;
 			canvas.height = h;
-			if (resetSchedId != null) {
-				clearTimeout(resetSchedId);
-				resetSchedId = null;
-			}
+			if (resetTimer != Infinity)
+				resetTimer = Infinity;
 			resized = 1;
 		}
 		if (width != w || height != h) {
-			if (resetSchedId == null) {
-				resetSchedId = setTimeout(reset, resetWait);
-			}
+			if (resetTimer == Infinity)
+				resetTimer = Time.now() + ResetWait;
 		} else {
-			if (resetSchedId != null) {
-				resetSchedId = setTimeout(reset, resetWait);
-				resetSchedId = null;
-			}
+			if (resetTimer != Infinity)
+				resetTimer = Infinity;
 		}
 		return resized;
+	}
+
+	function checkReset() {
+		var toreset = Time.now() > resetTimer;
+		if (toreset) reset();
+		return toreset;
 	}
 
 	function reportMouseMove() {
@@ -173,6 +187,104 @@ function Fragilo() {
 			console.error(gl.getShaderInfoLog(shader));
 	}
 
+	function genVertices(w, h) {
+		var vn = Math.round(w * h * VerticesDensity);
+		var tn = 2*vn - 6; // it is the strict value, because the envelope is a tetragon
+		verticesN = vn;
+		trianglesN = tn;
+	 	vertices = new Float32Array(2*vn);
+		triangles = new Int32Array(3*tn);
+		adjacencyDataIdx = new Int32Array(vn);
+		adjacencyData = new Int32Array(3*tn);
+
+		// init vertices
+		for (var i = 0; i < 2*n; ) {
+			var x = w * Math.random();
+			vertices[i++] = x;
+			var y = h * Math.random();
+			vertices[i++] = y;
+		}
+
+		// triangulate
+		// TODO: port delaunay to asm.js
+		var verticesAoS = {};
+		for (var i = 0; i < vn; i++) {
+			verticesAoS[i][0] = vertices[2*i];
+			verticesAoS[i][1] = vertices[2*i+1];
+		}
+		var trianglesAoS = delaunay.triangulate(vertices);
+		triangleAoS.length();
+		for (var i = 0; i < tn; i++) {
+			triangles[3*i]   = trianglesAoS[i].i;
+			triangles[3*i+1] = trianglesAoS[i].j;
+			triangles[3*i+2] = trianglesAoS[i].k;
+		}
+
+		// get histgram
+		for (var i = 0; i < 3*tn; ) {
+			var p = triangles[i++];
+			var q = triangles[i++];
+			var r = triangles[i++];
+			adjacencyDataIdx[p]++;
+			adjacencyDataIdx[q]++;
+			adjacencyDataIdx[r]++;
+		}
+		adjacencyDataIdx[0]++;
+		adjacencyDataIdx[1]++;
+		adjacencyDataIdx[2]++;
+		adjacencyDataIdx[3]++;
+
+		// accumrate histgram
+		for (var i = 0, sum = 0; i < vn; i++) {
+			v = adjacencyDataIdx[i];
+			adjacencyDataIdx[i] = sum;
+			adjacencyData[sum] = -v;
+			sum += v;
+		}
+
+		// order data
+		for (var i = 0; i < tn; ) {
+			var a = triangles[i++];
+			var b = triangles[i++];
+			var c = triangles[i++];
+
+			var add = function(p, q, r) {
+				if (q < r) {
+					var s = q;
+					q = r;
+					r = s;
+				}
+				// loop fusion can be faster, but it is complex and tiresome
+				var j = adjacencyDataIdx[p];
+				for (var stage = 0; stage < 2; q = r, stage++) {
+					while (1) {
+						var k = j++;
+						v = adjacencyData[k];
+						if (v == 0) {
+							adjacencyData[k] = q;
+							break;
+						}
+						if (q == v) {
+							break;
+						}
+						if (q < v) {
+							adjacencyData[k] = q;
+							while (1) {
+								w = adjacencyData[j];
+								adjacencyData[j++] = v;
+								if (w == 0) break;
+								v = w;
+							}
+							break;
+						}
+					}
+				}
+			}
+			add(a, b, c);
+			add(b, c, a);
+			add(c, a, b);
+		}
+	}
 
 	return { init: init };
 }
