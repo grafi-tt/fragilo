@@ -1,19 +1,3 @@
-/*
-The zlib/libpng License
-
-Copyright (c) 2014 grafi (Shunsuke Shimizu)
-
-This software is provided 'as-is', without any express or implied warranty. In no event will the authors be held liable for any damages arising from the use of this software.
-
-Permission is granted to anyone to use this software for any purpose, including commercial applications, and to alter it and redistribute it freely, subject to the following restrictions:
-
-	1. The origin of this software must not be misrepresented; you must not claim that you wrote the original software. If you use this software in a product, an acknowledgment in the product documentation would be appreciated but is not required.
-
-	2. Altered source versions must be plainly marked as such, and must not be misrepresented as being the original software.
-
-	3. This notice may not be removed or altered from any source distribution.
-*/
-
 function Fragilo() {
 	var canvas, gl;
 	var curveProg, plainProg;
@@ -66,9 +50,9 @@ function Fragilo() {
 
 		genVertices(w, h);
 
-		var vCurveShader = newShader('fragilo-vs', {PROCESS_CURVE: 1});
-		var vPlainShader = newShader('fragilo-vs', {});
-		var fCurveShader = newShader('fragilo-fs', {});
+		var vCurveShader = newShader(VertexSource, gl.VERTEX_SHADER, {PROCESS_CURVE: 1});
+		var vPlainShader = newShader(VertexSource, gl.VERTEX_SHADER, {});
+		var fCurveShader = newShader(FragmentSource, gl.FRAGMENT_SHADER, {});
 		curveProg = gl.createProgram();
 		gl.attachShader(curveProg, vCurveShader);
 		gl.attachShader(curveProg, vPlainShader);
@@ -157,19 +141,8 @@ function Fragilo() {
 		mouseEndX = ev.clientX, mouseEndY = ev.clientY;
 	}
 
-	function newShader(id, option) {
-		var elem = document.getElementById(id);
-		if (!elem) return;
-		switch (elem.type){
-		case 'x-shader/x-vertex':
-			shader = gl.createShader(gl.VERTEX_SHADER);
-			break;
-		case 'x-shader/x-fragment':
-			shader = gl.createShader(gl.FRAGMENT_SHADER);
-			break;
-		default :
-			return;
-		}
+	function newShader(src, type, option) {
+		var shader = gl.createShader(type);
 
 		var macros = "";
 		for (var k in option) {
@@ -180,7 +153,7 @@ function Fragilo() {
 				macros += "#define " + k + " " + v + "\n";
 		}
 
-		var shader = gl.shaderSource(macros + elem.text);
+		gl.shaderSource(shader, macros + src);
 		gl.compileShader(shader);
 		if (gl.getShaderParameter(shader, gl.COMPILE_STATUS))
 			return shader;
