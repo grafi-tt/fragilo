@@ -30,8 +30,8 @@ var ParticleMangerSupport = {
 	heapResize: function(oldHeap, oldW, oldH, n, newHeap, newW, newH) {
 		var oldSize = oldHeap.byteLength >> 32;
 		var newSize = newHeap.byteLength >> 32;
-		var fOldHeap = new stblib.Float32Array(oldHeap);
-		var fNewHeap = new stblib.Float32Array(newHeap);
+		var fOldHeap = new Float32Array(oldHeap);
+		var fNewHeap = new Float32Array(newHeap);
 		var scaleX = newW / oldW;
 		var scaleY = newH / oldH;
 
@@ -57,7 +57,7 @@ function ParticleManager(stdlib, foreign, heap) {
 	var sqrt = stdlib.Math.sqrt;
 	var log  = stdlib.Math.log;
 	var exp  = stdlib.Math.exp;
-	var fHeap = new stblib.Float32Array(heap);
+	var fHeap = new stdlib.Float32Array(heap);
 
 	var particleN = 0;
 	var particleCoordsOffset = 0;

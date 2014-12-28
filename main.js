@@ -52,7 +52,8 @@ function Fragilo() {
 		var h = canvas.clientHeight;
 
 		var time = Date.now();
-		var ptcHeapNew = new ArrayBuffer(ParticleMangerSupport.heapBytes(w, h));
+		var ptcBytes = ParticleMangerSupport.heapBytes(w, h);
+		var ptcHeapNew = new ArrayBuffer(ptcBytes);
 		if (ptcMan) {
 			ParticleMangerSupport.heapResize(ptcHeap, width, height, ptcMan.getParticleCount(),
 					ptcHeapNew, w, h);
@@ -110,18 +111,18 @@ function Fragilo() {
 		var w = canvas.clientWidth;
 		var h = canvas.clientHeight;
 		var resized = 0;
-		if (canvas.width != w || canvas.height != h) {
+		if (canvas.width !== w || canvas.height !== h) {
 			canvas.width  = w;
 			canvas.height = h;
-			if (resetTimer != Infinity)
+			if (resetTimer !== Infinity)
 				resetTimer = Infinity;
 			resized = 1;
 		}
-		if (width != w || height != h) {
+		if (width !== w || height !== h) {
 			if (resetTimer == Infinity)
 				resetTimer = Date.now() + ResetWait;
 		} else {
-			if (resetTimer != Infinity)
+			if (resetTimer !== Infinity)
 				resetTimer = Infinity;
 		}
 		return resized;
@@ -198,7 +199,7 @@ function Fragilo() {
 		adjacencyData = new Int32Array(3*tn);
 
 		// init vertices
-		for (var i = 0; i < 2*n; ) {
+		for (var i = 0; i < 2*vn; ) {
 			var x = w * Math.random();
 			vertices[i++] = x;
 			var y = h * Math.random();
@@ -207,13 +208,13 @@ function Fragilo() {
 
 		// triangulate
 		// TODO: port delaunay to asm.js
-		var verticesAoS = {};
+		var verticesAoS = [];
 		for (var i = 0; i < vn; i++) {
+			verticesAoS[i] = [];
 			verticesAoS[i][0] = vertices[2*i];
 			verticesAoS[i][1] = vertices[2*i+1];
 		}
-		var trianglesAoS = delaunay.triangulate(vertices);
-		triangleAoS.length();
+		var trianglesAoS = Delaunay.triangulate(verticesAoS);
 		for (var i = 0; i < tn; i++) {
 			triangles[3*i]   = trianglesAoS[i].i;
 			triangles[3*i+1] = trianglesAoS[i].j;
@@ -260,11 +261,11 @@ function Fragilo() {
 					while (1) {
 						var k = j++;
 						v = adjacencyData[k];
-						if (v == 0) {
+						if (v === 0) {
 							adjacencyData[k] = q;
 							break;
 						}
-						if (q == v) {
+						if (q === v) {
 							break;
 						}
 						if (q < v) {
@@ -272,7 +273,7 @@ function Fragilo() {
 							while (1) {
 								w = adjacencyData[j];
 								adjacencyData[j++] = v;
-								if (w == 0) break;
+								if (w === 0) break;
 								v = w;
 							}
 							break;
