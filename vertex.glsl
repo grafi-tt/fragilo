@@ -1,23 +1,49 @@
-precision mediump float;
-
-attribute aCoord;
+attribute vec2 aCoord;
 #ifdef PROCESS_CURVE
-
+// 32bit float suffice for represent integer
+attribute float aCrevasPos;
 #endif
 
-uniform uParticleCoords;
+uniform vec2 uParticleCoords[PARTICLE_MAX];
+uniform vec4 uParticleColors[PARTICLE_MAX];
+uniform int  uParticleN;
 
+uniform vec4 uCrevasPointsX[CREVAS_POINT_MAX/4];
+uniform vec4 uCrevasPointsY[CREVAS_POINT_MAX/4];
+uniform vec4 uCrevasUnitVecsX[CREVAS_POINT_MAX/4];
+uniform vec4 uCrevasUnitVecsY[CREVAS_POINT_MAX/4];
+uniform int  uCrevasPointsN;
+
+varying vec3 vColor;
 varying vec3 vTextureCoord;
-varying bool vIsConvex;
 
 vec2 calculateShift() {
-	vec2 p, q = crevas[0];
-	vec2 pqn, pqnt;
-	vec2 apn, qan = normalize(q - a);
-	float weight;
-	vec2 shift = 0;
-	for (int i = 1; i < n; i++,
-			shift += weight * pqnt) {
+#ifdef PROCESS_CURVE
+	int crevasPos = int(abs(aCrevasPos));
+	float directionSign = sign(aCrevasPos);
+	int crevasPos4 = crevasPos / 4;
+	vec4 mask = vec4(0.0);
+	mask[crevasPos - crevasPos4*4] = 1.0;
+#endif
+
+	vec4 apux, apuy;
+	vec4 qaux, qauy;
+	vec4 ap4x, ap4y, ap4invabs;
+	vec4 ap4ux, ap4uy;
+
+	vec4 pqux, pquy;
+	vec4 pqunx, pquny;
+
+	ap4x = uCrevasPointsX[0] - vec4(aCoord.x);
+	ap4y = uCrevasPointsY[0] - vec4(aCoord.y);
+	ap4invabs = inversesqrt(ap4x * ap4x + ap4y * ap4y);
+	ap4ux = ap4invabs * ap4x;
+	ap4uy = ap4invabs * ap4y;
+
+	vec4 shiftx = vec4(0.0);
+	vec4 shifty = vec4(0.0);
+
+	for (int i = 0; i < uCrevasPointsN/4+1; i++) {
 		/*
 		There are a point A and a line segment PQ.
 		Here, calculating `weight` by following:
@@ -25,36 +51,59 @@ vec2 calculateShift() {
 			sin(AQP) if angle(AQP) > pi/2
 			       1 otherwise
 		*/
-		p = q;
-		q = crevas[i];
-		pqn = normalize(q - p);
-		pqnt.x = -pqn.y, pqnt.y = pqn.x;
-		apn = -qan,
-		qan = normalize(q - a);
+		apux = ap4ux;
+		apuy = ap4uy;
+
+		ap4x = uCrevasPointsX[i+1] - vec4(aCoord.x);
+		ap4y = uCrevasPointsY[i+1] - vec4(aCoord.y);
+		ap4invabs = inversesqrt(ap4x * ap4x + ap4y * ap4y);
+		ap4ux = ap4invabs * ap4x;
+		ap4uy = ap4invabs * ap4y;
+
+		qaux = -vec4(apux.tpq, ap4ux.s);
+		qauy = -vec4(apuy.tpq, ap4uy.s);
+
+		pqux = uCrevasUnitVecsX[i];
+		pquy = uCrevasUnitVecsY[i];
+		pqunx = -pquy;
+		pquny = pqux;
+
+		vec4 pqu_apu = pqux * apux + pquy * apuy;
+		vec4 pqu_qau = pqux * qaux + pquy * qauy;
+		vec4 maxcos = max(vec4(0.0), max(pqu_apu, pqu_qau));
+
+		vec4 dir = sign(pqunx * apux + pquny * apuy);
+		vec4 weightabs = dir * sqrt(1.0 - maxcos*maxcos);
 #ifdef PROCESS_CURVE
-		if () {
-			weight = isleft ? 1.0 : -1.0;
-			continue;
+		if (i == crevasPos4) {
+			weightabs = max(weightabs, mask);
 		}
 #endif
-		float maxcos = max(0.0, max(dot(pqn, apn), dot(pqn, qan)));
-		weight = sign(dot(pqnt, ap)) * sqrt(1.0 - maxcos*maxcos);
+		vec4 weight = dir * weightabs;
+
+		shiftx += pqunx * weight;
+		shifty += pquny * weight;
 	}
+
+	vec2 shift;
+	shift.x = shiftx.s + shiftx.t + shiftx.p + shiftx.q;
+	shift.y = shifty.s + shifty.t + shifty.p + shifty.q;
 	return shift;
 }
 
-vec2 calculateColor(vec2 shift) {
+vec3 calculateColor(vec2 shift) {
 	vec3 color;
-	for (int i = 0; i < n; i++) {
-		vec2 p = particleCoords[i];
-		vec4 pcol = particleColors[i];
-		vec2 d2 = dot(a - p, a - p);
-		color += (pcol.a / d2) * pcol.rgb;
+	for (int i = 0; i < uParticleN; i++) {
+		vec2 p = uParticleCoords[i];
+		vec4 pcol = uParticleColors[i];
+		float d2 = dot(aCoord - p, aCoord - p);
+		color += vec3(pcol.a / d2) * pcol.rgb;
 	}
 	return color;
 }
 
 void main() {
-	vec2 s = calculateShift();
-	vec2 c = calculateColor(s);
+	vec2 shift = calculateShift();
+	vColor = calculateColor(shift);
+	gl_Position = aCoord;
 }

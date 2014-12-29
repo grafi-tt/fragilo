@@ -1,14 +1,15 @@
 precision mediump float;
 
+varying vec3 vColor;
 varying vec3 vTextureCoord;
-varying bool vIsConvex;
 
-vec2 calculateCurveAlpha() {
+float calculateCurveAlpha() {
 	// Using the argorithm for drawing 2D bezier curve
 	// http://http.developer.nvidia.com/GPUGems3/gpugems3_ch25.html
 	// http://research.microsoft.com/apps/pubs/default.aspx?id=78197
-	vec2 st = vTextureCoord;
-	float fst st.s * st.s - st.t;
+	vec2 st = vTextureCoord.st;
+	float convexSign = vTextureCoord.p;
+	float fst = (st.s * st.s - st.t) * convexSign;
 #ifdef GL_OES_standard_derivatives
 	#extension GL_OES_standard_derivatives: enable
 	vec2 dstdx = dFdx(st);
@@ -24,5 +25,6 @@ vec2 calculateCurveAlpha() {
 }
 
 void main() {
-	calculateCurveAlpha();
+	gl_FragColor.rgb = vColor;
+	gl_FragColor.a = calculateCurveAlpha();
 }

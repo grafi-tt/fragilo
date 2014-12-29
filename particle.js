@@ -4,14 +4,17 @@ particleSpeeds = [v0, v0, v1, v1, ...] : float[2*SIZE]
 particleColors = [r0, g0, b0, a0, r1, g1, b1, a1, ...] : float[4*SIZE]
 */
 
-var ParticleMangerSupport = {
-	heapBytes: function(w, h) {
+var ParticleMangerSupport = (function(){
+	function heapBytes(w, h) {
 		var n = w * h / 1024;
 		var size;
 		for (size = 1; size < n; size <<= 1);
 		return 32 * size;
-	},
-	heapResize: function(oldHeap, oldW, oldH, n, newHeap, newW, newH) {
+	}
+	function heapView(heap) {
+		var size = heap.byteLength;
+	}
+	function heapResize(oldHeap, oldW, oldH, n, newHeap, newW, newH) {
 		var oldSize = oldHeap.byteLength >> 32;
 		var newSize = newHeap.byteLength >> 32;
 		var fOldHeap = new Float32Array(oldHeap);
@@ -34,7 +37,13 @@ var ParticleMangerSupport = {
 			j++;
 		}
 	}
-}
+
+	return {
+		heapBytes:  heapBytes,
+		heapView:   heapView,
+		heapResize: heapResize
+	}
+})();
 
 function ParticleManager(stdlib, foreign, heap) {
 	"use asm";
