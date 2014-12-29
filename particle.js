@@ -12,28 +12,34 @@ var ParticleMangerSupport = (function(){
 		return 32 * size;
 	}
 	function heapView(heap) {
-		var size = heap.byteLength;
+		var size = heap.byteLength / 32;
+		return {
+			particleCoords: new Float32Array(heap,       0, 2*size),
+			particleSpeeds: new Float32Array(heap,  8*size, 2*size),
+			particleColors: new Float32Array(heap, 16*size, 4*size),
+			particlesMaxN: size
+		};
 	}
 	function heapResize(oldHeap, oldW, oldH, n, newHeap, newW, newH) {
-		var oldSize = oldHeap.byteLength >> 32;
-		var newSize = newHeap.byteLength >> 32;
-		var fOldHeap = new Float32Array(oldHeap);
-		var fNewHeap = new Float32Array(newHeap);
+		var oldView = heapView(oldHeap);
+		var newView = heapView(newHeap);
 		var scaleX = newW / oldW;
 		var scaleY = newH / oldH;
 
 		var j = 0;
 		for (var i = 0; i < n; i++) {
 			// TODO considering weight of particle for dropping may be better
-			if (i < n - newSize) continue;
-			newHeap[            2*j  ] = scaleX * oldHeap[            2*i  ];
-			newHeap[            2*j+1] = scaleY * oldHeap[            2*i+1];
-			newHeap[2*newSize + 2*j  ] = scaleX * oldHeap[2*oldSize + 2*i  ];
-			newHeap[2*newSize + 2*j+1] = scaleY * oldHeap[2*oldSize + 2*i+1];
-			newHeap[4*newSize + 4*j  ] =          oldHeap[4*oldSize + 4*i  ];
-			newHeap[4*newSize + 4*j+1] =          oldHeap[4*oldSize + 4*i+1];
-			newHeap[4*newSize + 4*j+2] =          oldHeap[4*oldSize + 4*i+2];
-			newHeap[4*newSize + 4*j+3] =          oldHeap[4*oldSize + 4*i+3];
+			if (i < n - newView.size) continue;
+			newView.particleCoords[2*j  ] = scaleX * oldView.particleCoords[2*i  ];
+			newView.particleCoords[2*j+1] = scaleY * oldView.particleCoords[2*i+1];
+
+			newView.particleSpeeds[2*j  ] = scaleX * oldView.particleSpeeds[2*i  ];
+			newView.particleSpeeds[2*j+1] = scaleY * oldView.particleSpeeds[2*i+1];
+
+			newView.particleColors[4*j  ] = oldView.particleColors[4*i  ];
+			newView.particleColors[4*j+1] = oldView.particleColors[4*i+1];
+			newView.particleColors[4*j+2] = oldView.particleColors[4*i+2];
+			newView.particleColors[4*j+3] = oldView.particleColors[4*i+3];
 			j++;
 		}
 	}
@@ -66,7 +72,7 @@ function ParticleManager(stdlib, foreign, heap) {
 
 	function init(size, w, h) {
 		size = size|0;
-		w = w|0, h = h|0;
+		w = w|0; h = h|0;
 
 		particleCoordsOffset = 0;
 		particleSpeedsOffset = 8 * size | 0;
@@ -78,25 +84,25 @@ function ParticleManager(stdlib, foreign, heap) {
 	function updateParticleSpeeds(time) {
 		time = +time;
 
-		var px = 0.0, py = 0.0, qx = 0.0, qy = 0.0;
-		var pvx = 0.0, pvy = 0.0, qvx = 0.0, qvy = 0.0;
-		var ax = 0.0, ay = 0.0;
+		var px = 0.0, py = 0.0, qx = 0.0, qy = 0.0,
+		    pvx = 0.0, pvy = 0.0, qvx = 0.0, qvy = 0.0,
+		    ax = 0.0, ay = 0.0,
 
-		var userMoveTime = 0.0;
-		var userMoveFired = 0;
-		var sx = 0.0, sy = 0.0, tx = 0.0, ty = 0.0;
-		var stx = 0.0, sty = 0.0;
-		var stnx = 0.0, stny = 0.0, stabs = 0.0;
-		var stsp = 0.0, stpt = 0.0;
-		var distToUserMove = 0.0;
-		var scaleUserMove = 0.0;
+		    userMoveTime = 0.0,
+		    userMoveFired = 0,
+		    sx = 0.0, sy = 0.0, tx = 0.0, ty = 0.0,
+		    stx = 0.0, sty = 0.0,
+		    stnx = 0.0, stny = 0.0, stabs = 0.0,
+		    stsp = 0.0, stpt = 0.0,
+		    distToUserMove = 0.0,
+		    scaleUserMove = 0.0,
 
-		var dx = 0.0, dy = 0.0;
-		var d2 = 0.0;
-		var resistance = 0.0;
-		var ParticleRadius2 = 0.0;
+		    dx = 0.0, dy = 0.0,
+		    d2 = 0.0,
+		    resistance = 0.0,
+		    ParticleRadius2 = 0.0,
 
-		var i = 0, j = 0, n8 = 0, end = 0;
+		    i = 0, j = 0, n8 = 0, end = 0;
 
 		sx = +userMoveSttX, sy = +userMoveSttY, tx = +userMoveEndX, ty = +userMoveEndY;
 		stx = +(tx - sx), sty = +(ty - sy);
@@ -156,8 +162,8 @@ function ParticleManager(stdlib, foreign, heap) {
 
 	function updateParticleCoords(time) {
 		time = +time;
-		var v;
-		var n8 = 0, noMoving = 1;
+		var vx = 0.0, vy = 0.0,
+		    n8 = 0, noMoving = 1;
 
 		n8 = 8*partcleN|0;
 		for (i = 0; i < n8; i = i+8|0) {
@@ -176,8 +182,8 @@ function ParticleManager(stdlib, foreign, heap) {
 	}
 
 	function reportUserMove(sttX, sttY, endX, endY) {
-		sttX = sttX|0, sttY = sttY|0;
-		endX = endX|0, endY = endY|0;
+		sttX = sttX|0; sttY = sttY|0;
+		endX = endX|0; endY = endY|0;
 
 		if (sttX != userMoveEndX || sttY != userMoveEndY)
 			userMoveSttX = sttX, userMoveSttY = sttY;

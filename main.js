@@ -1,7 +1,7 @@
 function Fragilo() {
 	var canvas, gl;
 	var curveProg, plainProg;
-	var ptcMan, ptcHeapView;
+	var ptcMan, ptcHeap, ptcHeapView;
 
 	var width, height, scale;
 
@@ -13,6 +13,7 @@ function Fragilo() {
 	var VerticesDensity = 1.0 / 200;
 
 	var verticesN, trianglesN;
+	var crevasPointsMaxN;
 	var vertices, triangles;
 	var adjacencyDataIdx, adjacencyData;
 
@@ -47,11 +48,19 @@ function Fragilo() {
 		ptcMan = ParticleManager(window, null, ptcHeapNew);
 		ptcMan.init(ptcBytes, w, h);
 		ptcHeap = ptcHeapNew;
+		ptcHeapView = ParticleMangerSupport.heapView(ptcHeap);
 
 		genVertices(w, h);
 
-		var vCurveShader = newShader(VertexSource, gl.VERTEX_SHADER, {PROCESS_CURVE: 1});
-		var vPlainShader = newShader(VertexSource, gl.VERTEX_SHADER, {});
+		var vPlainShader = newShader(VertexSource, gl.VERTEX_SHADER, {
+			PARTICLES_MAXN: ptcHeapView.particlesMaxN,
+			CREVAS_POINTS_MAXN: crevasPointsMaxN
+		});
+		var vCurveShader = newShader(VertexSource, gl.VERTEX_SHADER, {
+			PARTICLES_MAXN: ptcHeapView.particlesMaxN,
+			CREVAS_POINTS_MAXN: crevasPointsMaxN,
+			PROCESS_CURVE: 1
+		});
 		var fCurveShader = newShader(FragmentSource, gl.FRAGMENT_SHADER, {});
 		curveProg = gl.createProgram();
 		gl.attachShader(curveProg, vCurveShader);
@@ -166,7 +175,9 @@ function Fragilo() {
 		var tn = 2*vn - 6; // it is the strict value, because the envelope is a tetragon
 		verticesN = vn;
 		trianglesN = tn;
-	 	vertices = new Float32Array(2*vn);
+		crevasPointsMaxN = Math.floor(verticesN / 4); //TODO: super tekitou
+
+		vertices = new Float32Array(2*vn);
 		triangles = new Int32Array(3*tn);
 		adjacencyDataIdx = new Int32Array(vn);
 		adjacencyData = new Int32Array(3*tn);

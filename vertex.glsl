@@ -4,14 +4,14 @@ attribute vec2 aCoord;
 attribute float aCrevasPos;
 #endif
 
-uniform vec2 uParticleCoords[PARTICLE_MAX];
-uniform vec4 uParticleColors[PARTICLE_MAX];
+uniform vec2 uParticleCoords[PARTICLES_MAXN];
+uniform vec4 uParticleColors[PARTICLES_MAXN];
 uniform int  uParticleN;
 
-uniform vec4 uCrevasPointsX[CREVAS_POINT_MAX/4];
-uniform vec4 uCrevasPointsY[CREVAS_POINT_MAX/4];
-uniform vec4 uCrevasUnitVecsX[CREVAS_POINT_MAX/4];
-uniform vec4 uCrevasUnitVecsY[CREVAS_POINT_MAX/4];
+uniform vec4 uCrevasPointsX[CREVAS_POINTS_MAXN/4];
+uniform vec4 uCrevasPointsY[CREVAS_POINTS_MAXN/4];
+uniform vec4 uCrevasUnitVecsX[CREVAS_POINTS_MAXN/4];
+uniform vec4 uCrevasUnitVecsY[CREVAS_POINTS_MAXN/4];
 uniform int  uCrevasPointsN;
 
 varying vec3 vColor;
@@ -105,5 +105,5 @@ vec3 calculateColor(vec2 shift) {
 void main() {
 	vec2 shift = calculateShift();
 	vColor = calculateColor(shift);
-	gl_Position = aCoord;
+	gl_Position = vec4(aCoord, 0.0, 1.0);
 }
