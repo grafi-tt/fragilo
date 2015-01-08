@@ -12,7 +12,6 @@ uniform vec4 uCrevasPointsX[CREVAS_POINTS_MAXN/4];
 uniform vec4 uCrevasPointsY[CREVAS_POINTS_MAXN/4];
 uniform vec4 uCrevasUnitVecsX[CREVAS_POINTS_MAXN/4];
 uniform vec4 uCrevasUnitVecsY[CREVAS_POINTS_MAXN/4];
-uniform int  uCrevasPointsN;
 
 varying vec3 vColor;
 varying vec3 vTextureCoord;
@@ -23,7 +22,11 @@ vec2 calculateShift() {
 	float directionSign = sign(aCrevasPos);
 	int crevasPos4 = crevasPos / 4;
 	vec4 mask = vec4(0.0);
-	mask[crevasPos - crevasPos4*4] = 1.0;
+	int modulo = crevasPos - crevasPos4*4;
+	if (modulo == 0) mask[0] = 1.0;
+	if (modulo == 1) mask[1] = 1.0;
+	if (modulo == 2) mask[2] = 1.0;
+	if (modulo == 3) mask[3] = 1.0;
 #endif
 
 	vec4 apux, apuy;
@@ -43,7 +46,7 @@ vec2 calculateShift() {
 	vec4 shiftx = vec4(0.0);
 	vec4 shifty = vec4(0.0);
 
-	for (int i = 0; i < uCrevasPointsN/4+1; i++) {
+	for (int i = 0; i < CREVAS_POINTS_MAXN/4; i++) {
 		/*
 		There are a point A and a line segment PQ.
 		Here, calculating `weight` by following:
@@ -93,7 +96,7 @@ vec2 calculateShift() {
 
 vec3 calculateColor(vec2 shift) {
 	vec3 color;
-	for (int i = 0; i < uParticleN; i++) {
+	for (int i = 0; i < PARTICLES_MAXN; i++) {
 		vec2 p = uParticleCoords[i];
 		vec4 pcol = uParticleColors[i];
 		float d2 = dot(aCoord - p, aCoord - p);
