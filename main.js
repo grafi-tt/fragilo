@@ -15,7 +15,10 @@ function Fragilo() {
 	var verticesN, trianglesN;
 	var crevasPointsMaxN;
 	var vertices, triangles;
+	var verticesBufObj, trianglesBufObj;
 	var adjacencyDataIdx, adjacencyData;
+
+	var vCoordLoc, vCrevasPosLoc;
 
 
 	function init() {
@@ -52,10 +55,36 @@ function Fragilo() {
 
 		genVertices(w, h);
 
+		if (verticesBufObf != null)
+			gl.deleteBuffer(verticesBufObf);
+		if (trianglesBufObj != null)
+			gl.deleteBuffer(trianglesBufObj);
+
 		var vPlainShader = newShader(VertexSource, gl.VERTEX_SHADER, {
 			PARTICLES_MAXN: ptcHeapView.particlesMaxN,
 			CREVAS_POINTS_MAXN: crevasPointsMaxN
 		});
+		plainProg = gl.createProgram();
+		gl.attachShader(plainProg, vPlainShader);
+		gl.linkProgram(plainProg);
+
+		verticesBufObj = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, verticesBufObj);
+		gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+		var aCoordLoc = gl.getAttribLocation("aCoord");
+		gl.enableAttribArray(aCoordLoc);
+		gl.vertexAttribPointer(aCoordLoc, 2, vertices, false, 0, 0);
+		var aShift0Loc = gl.getAttribLocation("aShift0");
+		gl.enableAttribArray(aShift0Loc);
+		gl.vertexAttribPointer(aShift0Loc, 2, vertices, false, 0, 0);
+		var aShift1Loc = gl.getAttribLocation("aShift1");
+		gl.enableAttribArray(aShift1Loc);
+		gl.vertexAttribPointer(aShift1Loc, 2, vertices, false, 0, 0);
+
+		trianglesBufObj = gl.createBuffer();
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, trianglesBufObj);
+		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, triangles, gl.STATIC_DRAW);
+
 		var vCurveShader = newShader(VertexSource, gl.VERTEX_SHADER, {
 			PARTICLES_MAXN: ptcHeapView.particlesMaxN,
 			CREVAS_POINTS_MAXN: crevasPointsMaxN,
@@ -64,11 +93,12 @@ function Fragilo() {
 		var fCurveShader = newShader(FragmentSource, gl.FRAGMENT_SHADER, {});
 		curveProg = gl.createProgram();
 		gl.attachShader(curveProg, vCurveShader);
-		gl.attachShader(curveProg, vPlainShader);
+		gl.attachShader(curveProg, fCurveShader);
 		gl.linkProgram(curveProg);
-		plainProg = gl.createProgram();
-		gl.attachShader(plainProg, vPlainShader);
-		gl.linkProgram(plainProg);
+
+		var aCrevasPosLoc = gl.getAttribLocation("aCrevasPos");
+		gl.enableAttribArray(aCrevasPosLoc);
+		gl.vertexAttribPointer(aCrevasPosLoc, 2, aCbb);
 
 		gl.viewport(0, 0, scale*w, scale*h);
 
@@ -93,7 +123,8 @@ function Fragilo() {
 
 	function render(startTime) {
 		gl.useProgram(plainProg);
-		gl.drawElements();
+		gl.bindBuffer(vertices)
+		gl.drawElements(gl.TRIANGLES, );
 		gl.useProgram(curveProg);
 		gl.drawElements();
 		gl.flush();
@@ -161,6 +192,7 @@ function Fragilo() {
 			else
 				macros += "#define " + k + " " + v + "\n";
 		}
+		console.log(macros + src);
 
 		gl.shaderSource(shader, macros + src);
 		gl.compileShader(shader);
@@ -268,6 +300,15 @@ function Fragilo() {
 			add(a, b, c);
 			add(b, c, a);
 			add(c, a, b);
+		}
+	}
+
+	function create2dTree() {
+		// Depth firstly packed binary tree
+		var xySel = 0;
+		while() {
+			while() {
+			}
 		}
 	}
 

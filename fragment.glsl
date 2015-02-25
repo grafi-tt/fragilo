@@ -1,13 +1,22 @@
 precision mediump float;
 
-varying vec3 vColor;
-varying vec3 vTextureCoord;
+varying vec3 vColor0;
+#ifndef PROCESS_CURVE
+varying vec3 vColor1;
+varying vec3 vColor2;
+varying vec3 vColor3;
+#endif
 
-float calculateCurveAlpha() {
+#ifdef PROCESS_CURVE
+varying vec3 vTexCoord;
+#endif
+
+#ifdef PROCESS_CURVE
+void calculateCurveAlpha() {
 	// Using the argorithm for drawing 2D bezier curve
 	// http://http.developer.nvidia.com/GPUGems3/gpugems3_ch25.html
 	// http://research.microsoft.com/apps/pubs/default.aspx?id=78197
-	vec2 st = vTextureCoord.st;
+	vec2 st = vTexCoord.st;
 	float convexSign = vTextureCoord.p;
 	float fst = (st.s * st.s - st.t) * convexSign;
 #ifdef GL_OES_standard_derivatives
@@ -21,10 +30,13 @@ float calculateCurveAlpha() {
 #else
 	float alpha = (sign(fst) + 1.0) / 2.0;
 #endif
-	return alpha;
+	gl_FragColor.a = alpha;
 }
+#endif
 
 void main() {
 	gl_FragColor.rgb = vColor;
-	gl_FragColor.a = calculateCurveAlpha();
+#ifdef PROCESS_CURVE
+	calculateCurveAlpha();
+#endif
 }
