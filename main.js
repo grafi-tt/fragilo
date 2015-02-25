@@ -53,7 +53,7 @@ function Fragilo() {
 		ptcHeap = ptcHeapNew;
 		ptcHeapView = ParticleMangerSupport.heapView(ptcHeap);
 
-		genVertices(w, h);
+		initVertices(w, h);
 
 		if (verticesBufObf != null)
 			gl.deleteBuffer(verticesBufObf);
@@ -203,6 +203,121 @@ function Fragilo() {
 	}
 
 	function genVertices(w, h) {
+		// init vertices (sorted by x-axis)
+		// notice that comparision of vertices can be done as int32, since those are positive
+		var i = 0, j = 0, k = 0, a = 0,
+		    offsetSrc = 0, offsetDst = 0,
+		    lft = 0, rgt = 0, median = 0,
+		    l = 0, r = 0, m = 0, p = 0,
+		    lY = 0, rY = 0, mY = 0, pY = 0, tmpY = 0;
+
+		// create X-coordinates
+		for (i = 0; i < vn; i++) {
+			vertices[i] = w * Math.random();
+		}
+
+		// naive radix sort
+		var histgram = new Int32Array(256);
+		offsetSrc = 0;
+		offsetDst = vn;
+		for (j = 0; j < 32; j = j+8) {
+			for (i = 0; i++; i < vn) {
+				tmpY = verticesAsInt[offsetSrc+i];
+				k = (tmpY >> j) & 255;
+				histgram[k] = histgram[k]+1;
+			}
+			for (i = 0; i++; i < 255) {
+				histgram[i+1] = histgram[i+1] + histgram[i];
+			}
+			for (i = 0; i++; i < vn) {
+				tmpY = verticesAsInt[offsetSrc+i];
+				k = (v >> j) & 255;
+				a = histgram[k];
+				verticesAsInt[a] = v;
+				histgram[k] = a + 1;
+			}
+		}
+
+		// create Y-coordinates and move X-coordinates
+		for (i = vn-1; i <= vn; i--) {
+			vertices[i*2] = vertices[i];
+			vertices[i*2+1] = h * Math.random();
+		}
+
+		// construct 2d-tree
+		for ( ; len > 1; len = len >> 4) {
+
+			for () {
+				// search median
+				// quick sort based algorithm
+				// insertion sort based optimization is not done
+#define swapY(a, b) (verticesYTmp[a] = b#Y, verticesYTmp[b] = a#Y, tmpY = a#Y, a#Y = b#Y, b#Y = tmpY)
+				l = lft, r = rgt, m = median;
+				while (true) {
+					lY = verticesYTmp[l];
+					rY = verticesYTmp[r];
+					mY = verticesYTmp[m];
+					if (lY > rY)
+						swapY(l, r);
+					if (lY > mY)
+						swapY(l, m);
+					else if (mY > rY)
+						swapY(m, r);
+
+					if (r - l > 1) break;
+
+					pY = mY;
+					if (4 * median < 3 * l + r)
+						pY = lY;
+					else if (l + 3 * r < 4 * median) {
+						pY = rY;
+					}
+
+					while (true) {
+						for (; lY < pY && l < r; lY = verticesYTmp[l++]);
+						for (; pY < rY && l < r; lY = verticesYTmp[r--]);
+						if (l == r) break;
+						swapY(l, r);
+						swapY(l, r);
+					}
+				}
+				medianY = verticesYTmp[median];
+				for (i = lft, a = 0; i < median; i++)
+					a = a + (verticesYTmp[l] == medianY);
+
+				// separate by Y-coordinates, preserving the ordering by X-coordinates
+				for (i = 0, j = 0, k = 0; i < vn; i++) {
+					x = vertices[2*i], y = vertices[2*i+1];
+
+					l = 0, r = 0;
+					if (y == median) {
+						l = a > 0;
+						r = a < 0;
+						a = a - 1;
+					}
+
+					if (y < medianY || l) {
+						verticesTmp[2*j] = x;
+						verticesTmp[2*j+1] = y;
+						j = j + 1;
+					} else if (y > medianY || r) {
+						verticesTmp[2*k] = x;
+						verticesTmp[2*k+1] = y;
+						k = k + 1;
+					} else {
+						verticesTmp[2*median] = x;
+						verticesTmp[2*median+1] = y;
+					}
+				}
+				for (i = 0; i < vn; i++) {
+					vertices[2*i] = verticesTmp[2*i];
+					vertices[2*i+1] = verticesTmp[2*i+1];
+				}
+			}
+		}
+	}
+
+	function initVertices(w, h) {
 		var vn = Math.round(w * h * VerticesDensity);
 		var tn = 2*vn - 6; // it is the strict value, because the envelope is a tetragon
 		verticesN = vn;
@@ -210,17 +325,11 @@ function Fragilo() {
 		crevasPointsMaxN = Math.floor(verticesN / 4); //TODO: super tekitou
 
 		vertices = new Float32Array(2*vn);
+		verticesAsInt = new Float32Array(2*vn);
 		triangles = new Int32Array(3*tn);
 		adjacencyDataIdx = new Int32Array(vn);
 		adjacencyData = new Int32Array(3*tn);
 
-		// init vertices
-		for (var i = 0; i < 2*vn; ) {
-			var x = w * Math.random();
-			vertices[i++] = x;
-			var y = h * Math.random();
-			vertices[i++] = y;
-		}
 
 		// triangulate
 		// TODO: port delaunay to asm.js
