@@ -1,7 +1,7 @@
 function Fragilo() {
 	var canvas, gl;
 	var curveProg, plainProg;
-	var ptcMan, ptcHeap, ptcHeapView;
+	var ptcMan, ptcHeap;
 
 	var width, height, scale;
 
@@ -47,18 +47,14 @@ function Fragilo() {
 		var h = canvas.clientHeight;
 
 		var time = Date.now();
-		var ptcBytes = ParticleMangerSupport.heapBytes(w, h);
-		var ptcHeapNew = new ArrayBuffer(ptcBytes);
 		if (ptcMan) {
-			ParticleMangerSupport.heapResize(ptcHeap, width, height, ptcMan.getParticleCount(),
-					ptcHeapNew, w, h);
+			ptcMan.setRect(w, h);
+			ptcMan.addParticles();
 		} else {
-			// initParticle
+			ptcHeap = new ArrayBuffer(65536);
+			ptcMan = ParticleManager(window, null, ptcHeap);
+			ptcMan.setRect(w, h);
 		}
-		ptcMan = ParticleManager(window, null, ptcHeapNew);
-		ptcMan.init(ptcBytes, w, h);
-		ptcHeap = ptcHeapNew;
-		ptcHeapView = ParticleMangerSupport.heapView(ptcHeap);
 
 		initVertices(w, h);
 
@@ -68,7 +64,7 @@ function Fragilo() {
 			gl.deleteBuffer(trianglesBufObj);
 
 		var vPlainShader = newShader(VertexSource, gl.VERTEX_SHADER, {
-			PARTICLES_MAXN: ptcHeapView.particlesMaxN,
+			PARTICLES_MAXN: ptcMan.getParticleMaxN(),
 			CREVAS_POINTS_MAXN: crevasPointsMaxN
 		});
 		plainProg = gl.createProgram();
@@ -101,7 +97,7 @@ function Fragilo() {
 		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, triangles, gl.STATIC_DRAW);
 
 		var vCurveShader = newShader(VertexSource, gl.VERTEX_SHADER, {
-			PARTICLES_MAXN: ptcHeapView.particlesMaxN,
+			PARTICLES_MAXN: ptcMan.getParticleMaxN(),
 			CREVAS_POINTS_MAXN: crevasPointsMaxN,
 			PROCESS_CURVE: 1
 		});

@@ -9,7 +9,7 @@ fragilo.js: LICENSE fragment.glsl vertex.glsl main.js particle.js delaunay/delau
 	@echo "var FragmentSource =" >> $@
 	@sed -e's/"/\"/g' -e's/\\/\\\\/g' -e's/^/"/' -e's/$$/\\n"+/' -e'$$s/\+$$/;/' fragment.glsl >> $@
 	@gcc -E -P -x c++ main.js >> $@
-	@cat particle.js >> $@
+	@gcc -E -P -x c++ particle.js >> $@
 	@echo "// Delaunay: https://github.com/ironwallaby/delaunay" >> $@
 	@echo "// CC0 License" >> $@
 	@cat delaunay/delaunay.js >> $@
