@@ -12,14 +12,21 @@ function Fragilo() {
 
 	var VerticesDensity = 1.0 / 200;
 
-	var verticesN, trianglesN;
+	var verticesN;
+	var vertices, verticesShift0, verticesShift1;
+	var verticesBufObj, verticesShift0BufObj, verticesShift1BufObj;
+
+	var trianglesN;
+	var triangles;
+	var trianglesBufObj;
+
 	var crevasPointsMaxN;
-	var vertices, triangles;
-	var verticesBufObj, trianglesBufObj;
+	var crevasTriangles, crevasTrianglesShift;
+	var crevasTrianglesBufObj, crevasTrianglesShiftBufObj;
+
 	var adjacencyDataIdx, adjacencyData;
 
 	var vCoordLoc, vCrevasPosLoc;
-
 
 	function init() {
 		scale = window.devicePixelRatio || 1;
@@ -55,8 +62,8 @@ function Fragilo() {
 
 		initVertices(w, h);
 
-		if (verticesBufObf != null)
-			gl.deleteBuffer(verticesBufObf);
+		if (verticesBufObj != null)
+			gl.deleteBuffer(verticesBufObj);
 		if (trianglesBufObj != null)
 			gl.deleteBuffer(trianglesBufObj);
 
@@ -71,15 +78,23 @@ function Fragilo() {
 		verticesBufObj = gl.createBuffer();
 		gl.bindBuffer(gl.ARRAY_BUFFER, verticesBufObj);
 		gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
-		var aCoordLoc = gl.getAttribLocation("aCoord");
-		gl.enableAttribArray(aCoordLoc);
-		gl.vertexAttribPointer(aCoordLoc, 2, vertices, false, 0, 0);
-		var aShift0Loc = gl.getAttribLocation("aShift0");
-		gl.enableAttribArray(aShift0Loc);
-		gl.vertexAttribPointer(aShift0Loc, 2, vertices, false, 0, 0);
-		var aShift1Loc = gl.getAttribLocation("aShift1");
-		gl.enableAttribArray(aShift1Loc);
-		gl.vertexAttribPointer(aShift1Loc, 2, vertices, false, 0, 0);
+		var aCoordLoc = gl.getAttribLocation(plainProg, "aCoord");
+		gl.enableVertexAttribArray(aCoordLoc);
+		gl.vertexAttribPointer(aCoordLoc, 2, gl.FLOAT, false, 0, 0);
+
+		verticesShift0BufObj = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, verticesShift0BufObj);
+		gl.bufferData(gl.ARRAY_BUFFER, verticesShift0, gl.DYNAMIC_DRAW);
+		var aShift0Loc = gl.getAttribLocation(plainProg, "aShift0");
+		gl.enableVertexAttribArray(aShift0Loc);
+		gl.vertexAttribPointer(aShift0Loc, 2, gl.FLOAT, false, 0, 0);
+
+		verticesShift1BufObj = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, verticesShift1BufObj);
+		gl.bufferData(gl.ARRAY_BUFFER, verticesShift1, gl.DYNAMIC_DRAW);
+		var aShift1Loc = gl.getAttribLocation(plainProg, "aShift1");
+		gl.enableVertexAttribArray(aShift1Loc);
+		gl.vertexAttribPointer(aShift1Loc, 2, gl.FLOAT, false, 0, 0);
 
 		trianglesBufObj = gl.createBuffer();
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, trianglesBufObj);
@@ -96,9 +111,19 @@ function Fragilo() {
 		gl.attachShader(curveProg, fCurveShader);
 		gl.linkProgram(curveProg);
 
-		var aCrevasPosLoc = gl.getAttribLocation("aCrevasPos");
-		gl.enableAttribArray(aCrevasPosLoc);
-		gl.vertexAttribPointer(aCrevasPosLoc, 2, aCbb);
+		crevasTrianglesBufObj = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, crevasTrianglesBufObj);
+		gl.bufferData(gl.ARRAY_BUFFER, crevasTriangles, gl.STATIC_DRAW);
+		aCoordLoc = gl.getAttribLocation(curveProg, "aCoord");
+		gl.enableVertexAttribArray(aCoordLoc);
+		gl.vertexAttribPointer(aCoordLoc, 2, vertices, false, 0, 0);
+
+		crevasTrianglesShiftBufObj = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, crevasTrianglesShiftBufObj);
+		gl.bufferData(gl.ARRAY_BUFFER, crevasTrianglesShift, gl.DYNAMIC_DRAW);
+		aShift0Loc = gl.getAttribLocation(curveProg, "aShift0");
+		gl.enableVertexAttribArray(aShift0Loc);
+		gl.vertexAttribPointer(aShift0Loc, 2, vertices, false, 0, 0);
 
 		gl.viewport(0, 0, scale*w, scale*h);
 
@@ -123,10 +148,13 @@ function Fragilo() {
 
 	function render(startTime) {
 		gl.useProgram(plainProg);
-		gl.bindBuffer(vertices)
-		gl.drawElements(gl.TRIANGLES, );
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, trianglesBufObj);
+		gl.drawElements(gl.TRIANGLES, 3*trianglesN, gl.UNSIGNED_SHORT, 0);
+
 		gl.useProgram(curveProg);
-		gl.drawElements();
+		gl.bindBuffer(gl.ARRAY_BUFFER, crevasTrianglesBufObj);
+		gl.drawArrays(gl.TRIANGLES, verticesN, gl.UNSIGNED_SHORT, 0);
+
 		gl.flush();
 		requestAnimationFrame(renderUpdate.bind(undefined, startTime));
 	}
@@ -160,7 +188,7 @@ function Fragilo() {
 
 	function reportMouseMove() {
 		if (mouseSttX > 0 && mouseEndX > 0) {
-			var rect = e.target.getBoundingClientRect();
+			var rect = canvas.getBoundingClientRect();
 			var offX = rect.top, offY = rect.left;
 			ptcMan.reportWind(mouseSttX - offX, mouseSttY - offY, mouseEndX - offX, mouseEndY - offY);
 		}
@@ -202,12 +230,12 @@ function Fragilo() {
 			console.error(gl.getShaderInfoLog(shader));
 	}
 
-	function genVertices(w, h) {
+	function genVertices(w, h, vn) {
 		// init vertices (sorted by x-axis)
 		// notice that comparision of vertices can be done as int32, since those are positive
 		var i = 0, j = 0, k = 0, a = 0,
 		    offsetSrc = 0, offsetDst = 0,
-		    lft = 0, rgt = 0, median = 0,
+		    len = 0, lft = 0, rgt = 0, median = 0,
 		    l = 0, r = 0, m = 0, p = 0,
 		    lY = 0, rY = 0, mY = 0, pY = 0, tmpY = 0;
 
@@ -217,7 +245,7 @@ function Fragilo() {
 		}
 
 		// naive radix sort
-		var histgram = new Int32Array(256);
+		var histgram = new Int16Array(256);
 		offsetSrc = 0;
 		offsetDst = vn;
 		for (j = 0; j < 32; j = j+8) {
@@ -239,19 +267,18 @@ function Fragilo() {
 		}
 
 		// create Y-coordinates and move X-coordinates
-		for (i = vn-1; i <= vn; i--) {
+		for (i = 2*vn-1; i <= vn; i--) {
 			vertices[i*2] = vertices[i];
 			vertices[i*2+1] = h * Math.random();
 		}
 
 		// construct 2d-tree
 		for ( ; len > 1; len = len >> 4) {
-
-			for () {
+			for (med = len / 2, rgt = len - 1; lft < vn; lft = lft + len + 1, med = med + len + 1, rgt = rgt + len + 1) {
 				// search median
 				// quick sort based algorithm
 				// insertion sort based optimization is not done
-#define swapY(a, b) (verticesYTmp[a] = b#Y, verticesYTmp[b] = a#Y, tmpY = a#Y, a#Y = b#Y, b#Y = tmpY)
+#define swapY(a, b) (verticesYTmp[a] = b##Y, verticesYTmp[b] = a##Y, tmpY = a##Y, a##Y = b##Y, b##Y = tmpY)
 				l = lft, r = rgt, m = median;
 				while (true) {
 					lY = verticesYTmp[l];
@@ -319,6 +346,7 @@ function Fragilo() {
 
 	function initVertices(w, h) {
 		var vn = Math.round(w * h * VerticesDensity);
+		// TODO: create points in borders
 		var tn = 2*vn - 6; // it is the strict value, because the envelope is a tetragon
 		verticesN = vn;
 		trianglesN = tn;
@@ -326,10 +354,11 @@ function Fragilo() {
 
 		vertices = new Float32Array(2*vn);
 		verticesAsInt = new Float32Array(2*vn);
-		triangles = new Int32Array(3*tn);
-		adjacencyDataIdx = new Int32Array(vn);
-		adjacencyData = new Int32Array(3*tn);
+		triangles = new Uint16Array(3*tn);
+		adjacencyDataIdx = new Uint16Array(vn);
+		adjacencyData = new Uint16Array(3*tn);
 
+		genVertices(w, h, vn);
 
 		// triangulate
 		// TODO: port delaunay to asm.js
@@ -409,15 +438,6 @@ function Fragilo() {
 			add(a, b, c);
 			add(b, c, a);
 			add(c, a, b);
-		}
-	}
-
-	function create2dTree() {
-		// Depth firstly packed binary tree
-		var xySel = 0;
-		while() {
-			while() {
-			}
 		}
 	}
 

@@ -59,9 +59,9 @@ function ParticleManager(stdlib, foreign, heap) {
 	var fHeap = new stdlib.Float32Array(heap);
 
 	var particleN = 0;
-	var particleCoordsOffset = 0;
-	var particleSpeedsOffset = 0;
-	var particleColorsOffset = 0;
+	var particleCoordsPtr = 0;
+	var particleSpeedsPtr = 0;
+	var particleColorsPtr = 0;
 
 	var width = 0, height = 0;
 	var noMoved = 0;
@@ -74,9 +74,9 @@ function ParticleManager(stdlib, foreign, heap) {
 		size = size|0;
 		w = w|0; h = h|0;
 
-		particleCoordsOffset = 0;
-		particleSpeedsOffset = 8 * size | 0;
-		particleColorsOffset = 16 * size | 0;
+		particleCoordsPtr = 0;
+		particleSpeedsPtr = 8 * size | 0;
+		particleColorsPtr = 16 * size | 0;
 		width = w;
 		height = h;
 	}
@@ -106,20 +106,20 @@ function ParticleManager(stdlib, foreign, heap) {
 
 		sx = +userMoveSttX, sy = +userMoveSttY, tx = +userMoveEndX, ty = +userMoveEndY;
 		stx = +(tx - sx), sty = +(ty - sy);
-		stabs = +sqrt(+(wx * wx) + +(wy * wy));
+		stabs = +sqrt(+(stx * stx) + +(sty * sty));
 		stnx = +(stx / stabs), stny = +(sty / stabs);
 		userMoveTime = userMoveAccumTime + time;
-		userMoveFired = stabs > userMoveThreshold2;
+		userMoveFired = stabs > userMoveThreshold;
 		userMoveAccumTime = userMoveFired ? 0.0 : userMoveTime;
 
 		ParticleRadius2 = 500.0;
-		n8 = 8*partcleN|0;
-		// assume that particleCoordsOffset == 0
+		n8 = 8*particleN|0;
+		// assume that particleCoordsPtr == 0
 		for (i = 0; i < n8; i = i+8|0) {
 			px = fHeap[i>>2];
 			py = fHeap[((i+1)|0)>>2];
-			pvx = fHeap[((i+particleSpeedsOffset)|0)>>2];
-			pvy = fHeap[((((i+1)|0)+particleSpeedsOffset)|0)>>2];
+			pvx = fHeap[((i+particleSpeedsPtr)|0)>>2];
+			pvy = fHeap[((((i+1)|0)+particleSpeedsPtr)|0)>>2];
 
 			if (userMoveFired) {
 				stsp = +(stnx * +(px - sx)) + +(stny * +(py - sx));
@@ -147,16 +147,16 @@ function ParticleManager(stdlib, foreign, heap) {
 
 					pvx = +(pvx + ax), pvy = +(pvy + ay);
 
-					qvx = fHeap[((j+particleSpeedsOffset)|0)>>2];
-					qvy = fHeap[((((j+1)|0)+particleSpeedsOffset)|0)>>2];
+					qvx = fHeap[((j+particleSpeedsPtr)|0)>>2];
+					qvy = fHeap[((((j+1)|0)+particleSpeedsPtr)|0)>>2];
 					qvx = +(qvx - ax), qvy = +(qvy - ay);
-					fHeap[((j+particleSpeedsOffset)|0)>>2] = qvx;
-					fHeap[((((j+1)|0)+particleSpeedsOffset)|0)>>2] = qvy;
+					fHeap[((j+particleSpeedsPtr)|0)>>2] = qvx;
+					fHeap[((((j+1)|0)+particleSpeedsPtr)|0)>>2] = qvy;
 				}
 			}
 
-			fHeap[((i+particleSpeedsOffset)|0)>>2] = pvx;
-			fHeap[((((i+1)|0)+particleSpeedsOffset)|0)>>2] = pvy;
+			fHeap[((i+particleSpeedsPtr)|0)>>2] = pvx;
+			fHeap[((((i+1)|0)+particleSpeedsPtr)|0)>>2] = pvy;
 		}
 	}
 
@@ -165,12 +165,12 @@ function ParticleManager(stdlib, foreign, heap) {
 		var vx = 0.0, vy = 0.0,
 		    n8 = 0, noMoving = 1;
 
-		n8 = 8*partcleN|0;
+		n8 = 8*particleN|0;
 		for (i = 0; i < n8; i = i+8|0) {
 			x = fHeap[i>>2];
 			y = fHeap[((i+1)|0)>>2];
-			vx = fHeap[((i+particleSpeedsOffset)|0)>>2];
-			vy = fHeap[((((i+1)|0)+particleSpeedsOffset)|0)>>2];
+			vx = fHeap[((i+particleSpeedsPtr)|0)>>2];
+			vy = fHeap[((((i+1)|0)+particleSpeedsPtr)|0)>>2];
 			fHeap[i>>2] = +(x + +(time * vx));
 			fHeap[((i+1)|0)>>2] = +(y + +(time * vy));
 			noMoving = noMoving & (vx == 0.0 & vy == 0.0);

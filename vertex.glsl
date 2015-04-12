@@ -11,26 +11,21 @@ uniform int  uParticleN;
 varying vec3 vColor0;
 #ifndef PROCESS_CURVE
 varying vec3 vColor1;
-varying vec3 vColor2;
-varying vec3 vColor3;
 #endif
 
 #ifdef PROCESS_CURVE
 attribute vec2 aTexCoord;
 varying vec2 vTexCoord;
 #else
-attribute float aShiftSel0;
-attribute float aShiftSel1;
-varying float vShiftSel0;
-varying float vShiftSel1;
+attribute float aShiftSel;
+varying float vShiftSel;
 #endif
 
+// TODO: horizontal SIMD may be faster
 void calculateColor() {
 #ifndef PROCESS_CURVE
-	vec2 coord0 = aCoord - aShift0 - aShift1;
-	vec2 coord1 = aCoord - aShift0 + aShift1;
-	vec2 coord2 = aCoord + aShift0 - aShift1;
-	vec2 coord3 = aCoord + aShift0 + aShift1;
+	vec2 coord0 = aCoord + aShift0;
+	vec2 coord1 = aCoord - aShift1;
 #else
 	vec2 coord0 = aCoord + aShift0;
 #endif
@@ -43,15 +38,11 @@ void calculateColor() {
 		float dd0 = dot(coord0 - p, coord0 - p);
 #ifndef PROCESS_CURVE
 		float dd1 = dot(coord1 - p, coord1 - p);
-		float dd2 = dot(coord2 - p, coord2 - p);
-		float dd3 = dot(coord3 - p, coord3 - p);
 #endif
 
 		vColor0 += coldiff * vec3(1/dd0);
 #ifndef PROCESS_CURVE
 		vColor1 += coldiff * vec3(1/dd1);
-		vColor2 += coldiff * vec3(1/dd2);
-		vColor3 += coldiff * vec3(1/dd3);
 #endif
 	}
 }

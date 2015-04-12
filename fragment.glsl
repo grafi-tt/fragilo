@@ -3,17 +3,17 @@ precision mediump float;
 varying vec3 vColor0;
 #ifndef PROCESS_CURVE
 varying vec3 vColor1;
-varying vec3 vColor2;
-varying vec3 vColor3;
 #endif
 
 #ifdef PROCESS_CURVE
 varying vec3 vTexCoord;
+#else
+varying float vShiftSel;
 #endif
 
 #ifdef PROCESS_CURVE
-void calculateCurveAlpha() {
-	// Using the argorithm for drawing 2D bezier curve
+float calculateCurveAlpha() {
+	// Using following argorithm to draw 2D bezier curve
 	// http://http.developer.nvidia.com/GPUGems3/gpugems3_ch25.html
 	// http://research.microsoft.com/apps/pubs/default.aspx?id=78197
 	vec2 st = vTexCoord.st;
@@ -28,15 +28,22 @@ void calculateCurveAlpha() {
 	float dist = fst / sqrt(dfdx * dfdx + dfdy * dfdy);
 	float alpha = clamp(0.5 - dist, 0.0, 1.0);
 #else
+	// no anti aliasing
 	float alpha = (sign(fst) + 1.0) / 2.0;
 #endif
-	gl_FragColor.a = alpha;
+	return alpha;
 }
 #endif
 
 void main() {
-	gl_FragColor.rgb = vColor;
 #ifdef PROCESS_CURVE
-	calculateCurveAlpha();
+	gl_FragColor.rgb = vColor0;
+	gl_FragColor.a = calculateCurveAlpha();
+#elseif
+	if (vShiftSel < 0)
+		gl_FragColor.rgb = vColor0;
+	else
+		gl_FragColor.rgb = vColor1;
+	gl_FragColor.a = 1;
 #endif
 }
