@@ -40,9 +40,9 @@ void calculateColor() {
 		float dd1 = dot(coord1 - p, coord1 - p);
 #endif
 
-		vColor0 += coldiff * vec3(1/dd0);
+		vColor0 += coldiff * vec3(1.0/dd0);
 #ifndef PROCESS_CURVE
-		vColor1 += coldiff * vec3(1/dd1);
+		vColor1 += coldiff * vec3(1.0/dd1);
 #endif
 	}
 }
@@ -50,11 +50,11 @@ void calculateColor() {
 void main() {
 	calculateColor();
 
-	gl_Position = aCoord;
+	gl_Position.xy = aCoord;
+	gl_Position.zw = vec2(0.0, 1.0);
 #ifdef PROCESS_CURVE
 	vTexCoord = aTexCoord;
 #else
-	vShiftSel0 = aShiftSel0;
-	vShiftSel1 = aShiftSel1;
+	vShiftSel = aShiftSel;
 #endif
 }

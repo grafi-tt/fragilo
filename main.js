@@ -67,8 +67,11 @@ function Fragilo() {
 			PARTICLES_MAXN: ptcMan.getParticleMaxN(),
 			CREVAS_POINTS_MAXN: crevasPointsMaxN
 		});
+		var fPlainShader = newShader(FragmentSource, gl.FRAGMENT_SHADER, {
+		});
 		plainProg = gl.createProgram();
 		gl.attachShader(plainProg, vPlainShader);
+		gl.attachShader(plainProg, fPlainShader);
 		gl.linkProgram(plainProg);
 
 		verticesBufObj = gl.createBuffer();
@@ -101,7 +104,9 @@ function Fragilo() {
 			CREVAS_POINTS_MAXN: crevasPointsMaxN,
 			PROCESS_CURVE: 1
 		});
-		var fCurveShader = newShader(FragmentSource, gl.FRAGMENT_SHADER, {});
+		var fCurveShader = newShader(FragmentSource, gl.FRAGMENT_SHADER, {
+			PROCESS_CURVE: 1
+		});
 		curveProg = gl.createProgram();
 		gl.attachShader(curveProg, vCurveShader);
 		gl.attachShader(curveProg, fCurveShader);
@@ -349,6 +354,9 @@ function Fragilo() {
 		crevasPointsMaxN = Math.floor(verticesN / 4); //TODO: super tekitou
 
 		vertices = new Float32Array(2*vn);
+		verticesShift0 = new Float32Array(2*vn);
+		verticesShift1 = new Float32Array(2*vn);
+
 		verticesAsInt = new Float32Array(2*vn);
 		triangles = new Uint16Array(3*tn);
 		adjacencyDataIdx = new Uint16Array(vn);

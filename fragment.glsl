@@ -6,7 +6,7 @@ varying vec3 vColor1;
 #endif
 
 #ifdef PROCESS_CURVE
-varying vec3 vTexCoord;
+varying vec2 vTexCoord;
 #else
 varying float vShiftSel;
 #endif
@@ -17,8 +17,7 @@ float calculateCurveAlpha() {
 	// http://http.developer.nvidia.com/GPUGems3/gpugems3_ch25.html
 	// http://research.microsoft.com/apps/pubs/default.aspx?id=78197
 	vec2 st = vTexCoord.st;
-	float convexSign = vTextureCoord.p;
-	float fst = (st.s * st.s - st.t) * convexSign;
+	float fst = st.s * st.s - st.t;
 #ifdef GL_OES_standard_derivatives
 	#extension GL_OES_standard_derivatives: enable
 	vec2 dstdx = dFdx(st);
@@ -39,11 +38,11 @@ void main() {
 #ifdef PROCESS_CURVE
 	gl_FragColor.rgb = vColor0;
 	gl_FragColor.a = calculateCurveAlpha();
-#elseif
-	if (vShiftSel < 0)
+#else
+	if (vShiftSel < 0.0)
 		gl_FragColor.rgb = vColor0;
 	else
 		gl_FragColor.rgb = vColor1;
-	gl_FragColor.a = 1;
+	gl_FragColor.a = 1.0;
 #endif
 }
