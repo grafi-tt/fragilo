@@ -32,6 +32,8 @@ function Fragilo() {
 		scale = window.devicePixelRatio || 1;
 		canvas = document.getElementById('fragilo');
 		gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+		// debug
+		gl.verbose = true;
 
 		canvas.addEventListener("mousemove", onMouseMove, false);
 		canvas.addEventListener("mouseover", onMouseOver, false);
@@ -117,14 +119,14 @@ function Fragilo() {
 		gl.bufferData(gl.ARRAY_BUFFER, crevasTriangles, gl.STATIC_DRAW);
 		aCoordLoc = gl.getAttribLocation(curveProg, "aCoord");
 		gl.enableVertexAttribArray(aCoordLoc);
-		gl.vertexAttribPointer(aCoordLoc, 2, vertices, false, 0, 0);
+		gl.vertexAttribPointer(aCoordLoc, 2, gl.FLOAT, false, 0, 0);
 
 		crevasTrianglesShiftBufObj = gl.createBuffer();
 		gl.bindBuffer(gl.ARRAY_BUFFER, crevasTrianglesShiftBufObj);
 		gl.bufferData(gl.ARRAY_BUFFER, crevasTrianglesShift, gl.DYNAMIC_DRAW);
 		aShift0Loc = gl.getAttribLocation(curveProg, "aShift0");
 		gl.enableVertexAttribArray(aShift0Loc);
-		gl.vertexAttribPointer(aShift0Loc, 2, vertices, false, 0, 0);
+		gl.vertexAttribPointer(aShift0Loc, 2, gl.FLOAT, false, 0, 0);
 
 		gl.viewport(0, 0, scale*w, scale*h);
 
@@ -191,7 +193,7 @@ function Fragilo() {
 		if (mouseSttX > 0 && mouseEndX > 0) {
 			var rect = canvas.getBoundingClientRect();
 			var offX = rect.top, offY = rect.left;
-			ptcMan.reportWind(mouseSttX - offX, mouseSttY - offY, mouseEndX - offX, mouseEndY - offY);
+			ptcMan.reportUserMove(mouseSttX - offX, mouseSttY - offY, mouseEndX - offX, mouseEndY - offY);
 		}
 	}
 	function clearMouseMove() {
@@ -345,25 +347,7 @@ function Fragilo() {
 		}
 	}
 
-	function initVertices(w, h) {
-		var vn = Math.round(w * h * VerticesDensity);
-		// TODO: create points in borders
-		var tn = 2*vn - 6; // it is the strict value, because the envelope is a tetragon
-		verticesN = vn;
-		trianglesN = tn;
-		crevasPointsMaxN = Math.floor(verticesN / 4); //TODO: super tekitou
-
-		vertices = new Float32Array(2*vn);
-		verticesShift0 = new Float32Array(2*vn);
-		verticesShift1 = new Float32Array(2*vn);
-
-		verticesAsInt = new Float32Array(2*vn);
-		triangles = new Uint16Array(3*tn);
-		adjacencyDataIdx = new Uint16Array(vn);
-		adjacencyData = new Uint16Array(3*tn);
-
-		genVertices(w, h, vn);
-
+	function triVertices(vn, tn) {
 		// triangulate
 		// TODO: port delaunay to asm.js
 		var verticesAoS = [];
@@ -443,6 +427,30 @@ function Fragilo() {
 			add(b, c, a);
 			add(c, a, b);
 		}
+	}
+
+	function initVertices(w, h) {
+		var vn = Math.round(w * h * VerticesDensity);
+		// TODO: create points in borders
+		var tn = 2*vn - 6; // it is the strict value, because the envelope is a tetragon
+		verticesN = vn;
+		trianglesN = tn;
+		crevasPointsMaxN = Math.floor(verticesN / 4); //TODO: super tekitou
+
+		vertices = new Float32Array(2*vn);
+		verticesShift0 = new Float32Array(2*vn);
+		verticesShift1 = new Float32Array(2*vn);
+
+		verticesAsInt = new Float32Array(2*vn);
+		triangles = new Uint16Array(3*tn);
+		adjacencyDataIdx = new Uint16Array(vn);
+		adjacencyData = new Uint16Array(3*tn);
+
+		crevasTriangles = new Float32Array(3*crevasPointsMaxN);
+		crevasTrianglesShift = new Float32Array(3*crevasPointsMaxN);
+
+		genVertices(w, h, vn);
+		triVertices(vn, tn);
 	}
 
 	return { init: init };
